@@ -1,4 +1,3 @@
-    
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Club Ratings</title>
     
-    <!-- CSS Libraries -->
+    <!-- External Libraries -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css" rel="stylesheet">
@@ -15,7 +14,7 @@
     <style>
         body { background-color: #f0f2f5; font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding-bottom: 60px; }
         
-        /* Fixed Login Overlay */
+        /* FIX 1: Login Screen is now a FIXED overlay on top of everything */
         #login-screen {
             position: fixed;
             top: 0;
@@ -23,14 +22,11 @@
             width: 100%;
             height: 100%;
             background-color: #e9ecef;
-            z-index: 9999;
+            z-index: 9999; /* Always on top */
             display: flex;
             align-items: center;
             justify-content: center;
         }
-
-        /* Hide App Initially */
-        #app-content { display: none; } 
 
         .navbar { background: linear-gradient(135deg, #0056b3, #004494); }
         .navbar-brand { font-weight: bold; color: white !important; }
@@ -38,18 +34,7 @@
         .elo-badge { background-color: #e3f2fd; color: #0d47a1; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
         .rank-cell { font-weight: bold; color: #666; text-align: center; }
         .vs-badge { width: 40px; height: 40px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin: 0 auto; }
-        
-        /* Error Box */
-        #debug-area { 
-            display: none; 
-            background-color: #f8d7da; 
-            color: #721c24; 
-            padding: 10px; 
-            border-radius: 5px; 
-            margin-top: 15px; 
-            font-size: 0.85rem; 
-            word-break: break-word;
-        }
+        #debug-area { display: none; color: red; text-align: center; margin-top: 20px; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -59,14 +44,14 @@
         <div class="card p-4 text-center" style="max-width: 350px; width: 90%;">
             <h3 class="mb-3">🏓 Club Login</h3>
             <input type="password" id="password-input" class="form-control mb-3" placeholder="Password" style="text-align: center;" onkeydown="if(event.key==='Enter') checkPass()">
-            <button onclick="checkPass()" id="login-btn" class="btn btn-primary w-100 fw-bold">ENTER (v2.0)</button>
+            <button onclick="checkPass()" id="login-btn" class="btn btn-primary w-100 fw-bold">ENTER</button>
             <p id="pass-error" class="text-danger mt-2 small" style="display:none;">Incorrect password</p>
             <div id="debug-area"></div>
         </div>
     </div>
 
-    <!-- MAIN APP -->
-    <div id="app-content">
+    <!-- MAIN APP (FIX 2: Inline style ensures it is hidden on load) -->
+    <div id="app-content" style="display: none;">
         <nav class="navbar navbar-dark mb-3">
             <div class="container d-flex justify-content-between">
                 <span class="navbar-brand">🏓 Club Ratings</span>
@@ -157,9 +142,7 @@
 
     <script>
         const CLUB_PASSWORD = "pingpong"; 
-        
-        // Use RELATIVE PATH so it works on any repo name
-        const DATA_FILE = "./ratings_data.json";
+        const DATA_URL = "https://dtdr01.github.io/WHR-TT/ratings_data.json"; 
         
         let GLOBAL_DATA = null;
         let CHART_INSTANCE = null;
@@ -170,7 +153,6 @@
                 btn.innerText = "Loading Data...";
                 btn.disabled = true;
                 document.getElementById('pass-error').style.display='none';
-                document.getElementById('debug-area').style.display='none';
                 initApp();
             } else {
                 document.getElementById('pass-error').style.display='block';
@@ -179,20 +161,14 @@
 
         async function initApp() {
             try {
-                // Add timestamp to force fresh fetch (Bypasses Cache)
-                const fetchUrl = DATA_FILE + '?t=' + new Date().getTime();
-                
+                // Fetch Data
+                const fetchUrl = DATA_URL + '?t=' + new Date().getTime();
                 const res = await fetch(fetchUrl);
-                if (!res.ok) throw new Error("HTTP Error " + res.status + ": File not found");
+                if (!res.ok) throw new Error("HTTP " + res.status);
                 
-                // Parse JSON
-                try {
-                    GLOBAL_DATA = await res.json();
-                } catch(e) {
-                    throw new Error("Invalid JSON Format in data file.");
-                }
+                GLOBAL_DATA = await res.json();
                 
-                // Success: Switch Screens
+                // Hide Login (Fixed Overlay), Show App
                 document.getElementById('login-screen').style.display='none';
                 document.getElementById('app-content').style.display='block';
                 document.getElementById('last-update').innerText = "Updated: " + GLOBAL_DATA.meta.updated;
@@ -238,8 +214,7 @@
                 console.error(e);
                 const debug = document.getElementById('debug-area');
                 debug.style.display = 'block';
-                debug.innerHTML = "<b>LOAD FAILED:</b> " + e.message + "<br>Check if 'ratings_data.json' exists in GitHub.";
-                
+                debug.innerHTML = "FAILED TO LOAD DATA<br>" + e.message;
                 const btn = document.getElementById('login-btn');
                 btn.innerText = "Try Again";
                 btn.disabled = false;
@@ -317,5 +292,3 @@
     </script>
 </body>
 </html>
-
-  
