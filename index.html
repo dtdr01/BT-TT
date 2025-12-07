@@ -14,24 +14,27 @@
     <style>
         body { background-color: #f0f2f5; font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding-bottom: 60px; }
         
-        /* Modals */
+        /* Modals & Overlays */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #e9ecef; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         #app-content { display: none; }
         
-        /* UI Elements */
+        /* Branding */
         .navbar { background: linear-gradient(135deg, #0056b3, #004494); }
         .navbar-brand { font-weight: bold; color: white !important; }
         .card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* Table Styling */
         .elo-badge { background-color: #e3f2fd; color: #0d47a1; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
         .rank-cell { font-weight: bold; color: #666; text-align: center; }
         
         /* Links */
         .player-link { color: #0d6efd; font-weight: 600; text-decoration: none; cursor: pointer; }
         .player-link:hover { text-decoration: underline; }
-        
-        /* H2H Specific */
         .score-link { color: #212529; font-weight: bold; text-decoration: none; border-bottom: 1px dotted #999; cursor: pointer; }
-        .score-link:hover { background-color: #ffffd0; }
+        .score-link:hover { background-color: #ffffd0; color: #000; }
+        
+        /* Calculator */
+        .vs-badge { width: 40px; height: 40px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin: 0 auto; }
         
         #debug-area { display: none; background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 0.85rem; }
     </style>
@@ -78,7 +81,7 @@
                     </div>
                 </div>
 
-                <!-- HISTORY GRAPH -->
+                <!-- HISTORY -->
                 <div class="tab-pane fade" id="history">
                     <div class="card p-3">
                         <label class="form-label fw-bold">Select Players:</label>
@@ -104,7 +107,7 @@
                                 <select id="calc-p1" class="form-control select2-single"></select>
                                 <div class="text-center mt-2 fw-bold text-primary" id="elo-p1">-</div>
                             </div>
-                            <div class="col-2 text-center"><strong>VS</strong></div>
+                            <div class="col-2 text-center"><div class="vs-badge">VS</div></div>
                             <div class="col-5">
                                 <select id="calc-p2" class="form-control select2-single"></select>
                                 <div class="text-center mt-2 fw-bold text-primary" id="elo-p2">-</div>
@@ -128,9 +131,9 @@
         </div>
     </div>
 
-    <!-- H2H MODAL -->
+    <!-- H2H MODAL (Updated) -->
     <div class="modal fade" id="h2hModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable"> <!-- Changed to XL for more space -->
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="h2hTitle">Head to Head</h5>
@@ -138,15 +141,17 @@
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <table id="h2hTable" class="table table-sm table-striped w-100">
-                            <thead>
+                        <!-- Added width:100% -->
+                        <table id="h2hTable" class="table table-sm table-striped table-bordered w-100 align-middle">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Opponent</th>
                                     <th>Rating</th>
-                                    <th>Games</th>
-                                    <th>Wins</th>
-                                    <th>Losses</th>
-                                    <th>Score</th>
+                                    <th>Matches</th>
+                                    <th>W</th>
+                                    <th>L</th>
+                                    <th>Match Score</th>
+                                    <th>Set Score</th> <!-- NEW -->
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -162,7 +167,7 @@
         <div class="modal-dialog modal-sm modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-light py-2">
-                    <h6 class="modal-title mb-0" id="matchDetailTitle">Matches</h6>
+                    <h6 class="modal-title mb-0" id="matchDetailTitle">History</h6>
                     <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -213,7 +218,7 @@
                 document.getElementById('app-content').style.display='block';
                 document.getElementById('last-update').innerText = "Updated: " + GLOBAL_DATA.meta.updated;
 
-                // MAIN TABLE
+                // Main Table
                 const tData = GLOBAL_DATA.leaderboard.map(p => [
                     "", 
                     `<a class="player-link" onclick="openH2H('${p.name}')">${p.name}</a>`,
@@ -242,7 +247,7 @@
                     table.column(0, {search:'applied', order:'applied'}).nodes().each((cell, i) => cell.innerHTML = i + 1);
                 }).draw();
 
-                // DROPDOWNS
+                // Selects
                 const names = GLOBAL_DATA.leaderboard.map(p => p.name).sort();
                 names.forEach(n => {
                     $('#player-select').append(new Option(n, n));
@@ -253,7 +258,6 @@
                 $('.select2-single').select2({ width: '100%' });
                 $('#player-select').select2({ placeholder: "Select players...", width: '100%' });
                 
-                // CHART DEFAULT
                 const top5 = GLOBAL_DATA.leaderboard.slice(0, 5).map(p => p.name);
                 $('#player-select').val(top5).trigger('change');
                 updateChart();
@@ -264,15 +268,13 @@
                 document.getElementById('debug-area').style.display='block';
                 document.getElementById('debug-area').innerHTML = "Load Failed: " + e.message;
                 document.getElementById('login-btn').disabled = false;
-                document.getElementById('login-btn').innerText = "Retry";
             }
         }
 
-        // --- H2H LOGIC ---
+        // --- H2H LOGIC (UPDATED WITH SETS & ALIGNMENT) ---
         function openH2H(player) {
             document.getElementById('h2hTitle').innerText = "H2H: " + player;
             
-            // 1. Aggregate Stats
             const oppStats = {};
             
             GLOBAL_DATA.matches.forEach(m => {
@@ -284,7 +286,7 @@
                 
                 if (opponent) {
                     if (!oppStats[opponent]) {
-                        oppStats[opponent] = { w:0, l:0, d:0, games:0, history: [] };
+                        oppStats[opponent] = { w:0, l:0, d:0, games:0, sw:0, sl:0, history: [] };
                     }
                     
                     const score = m.sc.split('-');
@@ -292,29 +294,27 @@
                     const s2 = parseInt(score[1]);
                     
                     let pWins = 0, pLoss = 0;
-                    // Score is always p1-p2 in JSON
                     if (isP1) { pWins = s1; pLoss = s2; } 
                     else { pWins = s2; pLoss = s1; }
                     
-                    // Match result logic (Who won the match?)
-                    // Assuming match win if pWins > pLoss
+                    // Match result
                     if (pWins > pLoss) oppStats[opponent].w++;
                     else if (pLoss > pWins) oppStats[opponent].l++;
                     else oppStats[opponent].d++;
+                    
+                    // Set result accumulation
+                    oppStats[opponent].sw += pWins;
+                    oppStats[opponent].sl += pLoss;
                     
                     oppStats[opponent].games++;
                     oppStats[opponent].history.push({ date: m.d, score: `${pWins}-${pLoss}` });
                 }
             });
 
-            // 2. Build Table Data
             const rows = [];
             for (const [oppName, s] of Object.entries(oppStats)) {
-                // Find Elo
                 const oppObj = GLOBAL_DATA.leaderboard.find(x => x.name === oppName);
                 const elo = oppObj ? oppObj.elo : "-";
-                
-                // Pass history data as stringified JSON in a data attribute
                 const histStr = encodeURIComponent(JSON.stringify(s.history));
                 
                 rows.push([
@@ -323,11 +323,13 @@
                     s.games,
                     s.w,
                     s.l,
-                    `<span class="score-clickable score-link" onclick="showMatches('${player}', '${oppName}', '${histStr}')">${s.w} - ${s.l}</span>`
+                    // Match Score Clickable
+                    `<span class="score-link" onclick="showMatches('${player}', '${oppName}', '${histStr}')">${s.w} - ${s.l}</span>`,
+                    // New Sets Score Column
+                    `${s.sw} - ${s.sl}`
                 ]);
             }
 
-            // 3. Init Modal Table
             if (H2H_TABLE) H2H_TABLE.destroy();
             
             H2H_TABLE = $('#h2hTable').DataTable({
@@ -337,10 +339,11 @@
                 info: false,
                 scrollY: "50vh",
                 scrollCollapse: true,
-                order: [[ 1, "desc" ]], // Default sort by Opponent Rating (Column 1)
+                order: [[ 1, "desc" ]], // Sort by Rating
                 columnDefs: [
-                    { targets: 1, type: 'num' }, // Ensure rating sorts numerically
-                    { targets: 5, className: 'text-center' }
+                    { targets: 0, className: "fw-bold text-start" }, // Name Left
+                    { targets: 1, type: 'num', className: "text-center" }, // Rating Center
+                    { targets: [2,3,4,5,6], className: "text-center" } // Stats Center
                 ]
             });
 
@@ -350,7 +353,6 @@
 
         function showMatches(p1, p2, dataStr) {
             const history = JSON.parse(decodeURIComponent(dataStr));
-            // Sort history by date desc
             history.sort((a,b) => new Date(b.date) - new Date(a.date));
             
             const list = document.getElementById('matchDetailList');
@@ -361,7 +363,7 @@
                 list.innerHTML += `
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>${h.date}</span>
-                        <span class="fw-bold">${h.score}</span>
+                        <span class="fw-bold fs-6 badge bg-light text-dark border">${h.score}</span>
                     </li>`;
             });
             
@@ -369,15 +371,12 @@
             modal.show();
         }
 
-        // --- CHART & CALC ---
         function updateChart() {
             const ctx = document.getElementById('historyChart').getContext('2d');
             const selected = $('#player-select').val();
             const colors = ['#0d6efd', '#dc3545', '#198754', '#fd7e14', '#6610f2'];
             
-            // Check if history exists (BT model has empty history)
             if (Object.keys(GLOBAL_DATA.history).length === 0) {
-                // Clear chart if no history
                 if(CHART_INSTANCE) CHART_INSTANCE.destroy();
                 return;
             }
