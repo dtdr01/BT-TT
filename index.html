@@ -137,17 +137,17 @@
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <!-- 'w-100' ensures table fills modal width -->
+                        <!-- Updated styling for centering -->
                         <table id="h2hTable" class="table table-sm table-striped table-bordered w-100 align-middle">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Opponent</th>
-                                    <th>Rating</th>
-                                    <th>Matches</th>
-                                    <th>W</th>
-                                    <th>L</th>
-                                    <th>Match Score</th>
-                                    <th>Set Score</th>
+                                    <th class="text-start">Opponent</th>
+                                    <th class="text-center">Rating</th>
+                                    <th class="text-center">Matches</th>
+                                    <th class="text-center">W</th>
+                                    <th class="text-center">L</th>
+                                    <th class="text-center">Score</th>
+                                    <th class="text-center">Sets</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -288,12 +288,15 @@
                     if (isP1) { pWins = s1; pLoss = s2; } 
                     else { pWins = s2; pLoss = s1; }
                     
+                    // Match result: Who won the match?
                     if (pWins > pLoss) oppStats[opponent].w++;
                     else if (pLoss > pWins) oppStats[opponent].l++;
                     else oppStats[opponent].d++;
                     
+                    // Set Score accumulation
                     oppStats[opponent].sw += pWins;
                     oppStats[opponent].sl += pLoss;
+                    
                     oppStats[opponent].games++;
                     oppStats[opponent].history.push({ date: m.d, score: `${pWins}-${pLoss}` });
                 }
@@ -312,7 +315,7 @@
                     s.w,
                     s.l,
                     `<span class="score-link" onclick="showMatches('${player}', '${oppName}', '${histStr}')">${s.w} - ${s.l}</span>`,
-                    `${s.sw} - ${s.sl}`
+                    `${s.sw} - ${s.sl}` // Set score
                 ]);
             }
 
@@ -326,23 +329,30 @@
                 scrollY: "50vh",
                 scrollCollapse: true,
                 order: [[ 1, "desc" ]],
+                autoWidth: false, // Important for fix
                 columnDefs: [
-                    { targets: 0, className: "fw-bold text-start", width: "30%" },
-                    { targets: 1, type: 'num', className: "text-center", width: "10%" },
-                    { targets: [2,3,4,5,6], className: "text-center", width: "12%" }
-                ],
-                autoWidth: false
+                    { targets: 0, className: "fw-bold text-start ps-3", width: "25%" },
+                    { targets: [1,2,3,4,5,6], className: "text-center" } // Center aligns numbers
+                ]
             });
 
             const modalEl = document.getElementById('h2hModal');
             if (!h2hModalInstance) h2hModalInstance = new bootstrap.Modal(modalEl);
             h2hModalInstance.show();
-
-            // FIX: Force column adjustment AFTER modal is visible
-            modalEl.addEventListener('shown.bs.modal', function () {
-                H2H_TABLE.columns.adjust().draw();
-            }, { once: true });
         }
+
+        // *** GLOBAL FIX FOR MODAL ALIGNMENT ***
+        // This recalculates column widths exactly when the modal animation finishes
+        document.addEventListener('DOMContentLoaded', function() {
+            const h2hModalEl = document.getElementById('h2hModal');
+            h2hModalEl.addEventListener('shown.bs.modal', function () {
+                if (H2H_TABLE) {
+                    setTimeout(() => {
+                        H2H_TABLE.columns.adjust().draw();
+                    }, 150); // Slight delay for animation
+                }
+            });
+        });
 
         function showMatches(p1, p2, dataStr) {
             const history = JSON.parse(decodeURIComponent(dataStr));
